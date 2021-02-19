@@ -4,6 +4,8 @@ import digitalio
 import random
 import time
 
+from src.hardware import KtaneHardware
+
 # CONSTANTST
 DEBOUNCE_TIMEOUT = 0.1  # in seconds. as low as we can go right now :(
 IMMEDIATE_RELEASE_TIMEOUT = 0.5  # in seconds
@@ -11,11 +13,12 @@ BUTTON_TEXTS = ["abort", "detonate", "hold", "press"]
 BUTTON_COLORS = ["blue", "white", "black", "red", "yellow"]
 RELEVANT_INDICATORS = ["CAR", "FRK"]
 STRIP_COLORS = ["blue", "red", "white", "yellow"]
+ADDRESS = 0x10
 
 BUTTON_PIN = board.D5
 
 
-class Button:
+class Button(KtaneHardware):
 
     text = ""
     buttonColor = ""
@@ -29,6 +32,8 @@ class Button:
     buttonPressedAt = None  # timestamp
 
     def __init__(self):
+        super().__init__(ADDRESS)
+
         # game state
         self.text = random.choice(BUTTON_TEXTS)
         self.buttonColor = random.choice(BUTTON_COLORS)
@@ -49,6 +54,8 @@ class Button:
         # handle seq num stuff (super()?)
         # poll()
 
+        self.poll()
+
         isButtonPressed = self.isButtonPressed()
 
         if isButtonPressed and not self.wasButtonPressed:
@@ -61,9 +68,9 @@ class Button:
                 return
 
             if self.isGoodButtonRelease():
-                print("did a good job")
+                self.disarmed()
             else:
-                print("got a strike")
+                self.strike()
 
         self.wasButtonPressed = isButtonPressed
 
@@ -109,15 +116,11 @@ class Button:
         return self.isDigitInTime(1)
 
     def isDigitInTime(self, digit):
+        # @todo: consider RTT for fetching timer value. may want to
+        #   take timestamp before and after fetch, and subtract
         time = fetchTime()
         digitStr = str(digit)
         return digitStr in time
-
-    def writeSuccess(self):
-        print("did a good job")
-
-    def writeStrike(self):
-        print("got a strike")
 
 
 def fetchBatteryCount() -> int:
