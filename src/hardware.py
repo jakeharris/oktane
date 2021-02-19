@@ -3,10 +3,11 @@ from time import sleep
 
 import board
 import digitalio
+import busio
 
 # Constants:
 UART_NUM = 1
-BAUD_RATE = 115200
+BAUD_RATE = 9600
 TX_PIN = 8
 RX_PIN = 9
 TX_EN_PIN = 15
@@ -82,33 +83,27 @@ class KtaneHardware:
     #                       will be 0xFFFF
     def poll(self) -> None:
         """Poll UART"""
-        print(100)
         with digitalio.DigitalInOut(board.RX) as rx:
             rx.pull = digitalio.Pull.DOWN
 
             if rx.value == False:  # there is nothing to read
-                print(101)
                 return
 
             while rx.value == True:
-                print(102)
                 pass
 
             print("Detected pulldown, reading message: ", end="")
 
         with busio.UART(board.TX, board.RX, baudrate=BAUD_RATE, timeout=1) as uart:
-            print(200)
             length = uart.read(1)[0]  # read length byte
+            print(length)
             data = uart.read(length + 2)  # read data + checksum
             if data is not None:
-                led.value = False
                 # convert bytearray to string
                 data_string = (
                     ", ".join([str(b) for b in data[:-2]]) + "  cs: " + str(data[-2:])
                 )
-                print(data_string)
-
-                led.value = True
+                print(data)
 
     def send(
         self, dest: int, packet_type: int, seq_num: int, payload: bytes = b""
